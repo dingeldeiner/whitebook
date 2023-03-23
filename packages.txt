@@ -1,0 +1,2 @@
+libmariadb3
+libmariadb-dev
