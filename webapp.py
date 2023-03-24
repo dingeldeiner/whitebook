@@ -159,8 +159,7 @@ with tabs[0]:
     )
     st.map(mapdata)
 
-#    treemap = st.expander(label='Market Volume Breakdown')
-#    if treemap.expanded:
+
     st.plotly_chart(
         px.treemap(
             data,
