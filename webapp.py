@@ -34,7 +34,7 @@ def loaddata(selectcolumns):
     db.close()
 
 data = loaddata('Price, Date_Posted, Year, Make, Model, Trim, Colour, Body_Type, Doors, Seats, Drivetrain, Transmission, Fuel_Type, Kilometers, Sold, Timestamp, Latitude, Longitude')
-exploredata = data.query("")
+#exploredata = data.query("")
 
 #FILTERS
 def getFilterBy(df, col_name): #gets list of strings to filter by
