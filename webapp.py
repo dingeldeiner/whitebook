@@ -13,31 +13,28 @@ tabs = st.tabs(['Explore', 'Appraise'])
 #LOAD DATA
 @st.cache_data
 def loaddata(selectcolumns):
-    try:
-        query = 'SELECT ' + selectcolumns + ' FROM vehicles WHERE Date_Posted > 1675221580;'
-        db = mariadb.connect(
-            host=st.secrets.db_host,
-            user=st.secrets.db_username,
-            password=st.secrets.db_password,
-            database=st.secrets.db_name,
-        )
-        df = (
-            pd.read_sql(query, db)
-            .replace({
-                None:np.nan,
-                'null':np.nan
-            })
-        )
-        df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s')
-        df['Date_Posted'] = pd.to_datetime(df['Date_Posted'], unit='s')
-        df['Time_On_Market'] = df['Timestamp'].sub(df['Date_Posted'])
-        return df
-        db.close()
-    except Exception as e:
-        db.close()
-        print(str(e))
+    query = 'SELECT ' + selectcolumns + ' FROM vehicles WHERE Date_Posted > 1675221580;'
+    db = mariadb.connect(
+        host=st.secrets.db_host,
+        user=st.secrets.db_username,
+        password=st.secrets.db_password,
+        database=st.secrets.db_name,
+    )
+    df = (
+        pd.read_sql(query, db)
+        .replace({
+            None:np.nan,
+            'null':np.nan
+        })
+    )
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s')
+    df['Date_Posted'] = pd.to_datetime(df['Date_Posted'], unit='s')
+    df['Time_On_Market'] = df['Timestamp'].sub(df['Date_Posted'])
+    return df
+    db.close()
 
 data = loaddata('Price, Date_Posted, Year, Make, Model, Trim, Colour, Body_Type, Doors, Seats, Drivetrain, Transmission, Fuel_Type, Kilometers, Sold, Timestamp, Latitude, Longitude')
+exploredata = data.query("")
 
 #FILTERS
 def getFilterBy(df, col_name): #gets list of strings to filter by
