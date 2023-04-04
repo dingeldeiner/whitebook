@@ -4,8 +4,19 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 st.set_page_config(page_title='whitebook', page_icon=':car:', layout="centered", initial_sidebar_state="expanded", menu_items=None)
+
+#HIDE FULLSCREEN BUTTONS
+hide_img_fs = '''
+<style>
+button[title="View fullscreen"]{
+    visibility: hidden;
+    right: 0rem;}
+</style>
+'''
+st.markdown(hide_img_fs, unsafe_allow_html=True)
 
 #TABS
 tabs = st.tabs(['Explore', 'Appraise'])
@@ -27,6 +38,7 @@ def loaddata(selectcolumns):
             'null':np.nan
         })
     )
+    df['Date_Posted_S'] = df['Date_Posted']
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='s')
     df['Date_Posted'] = pd.to_datetime(df['Date_Posted'], unit='s')
     df['Time_On_Market'] = df['Timestamp'].sub(df['Date_Posted'])
@@ -55,7 +67,7 @@ max_price = 100000
 with st.sidebar:
     #TITLE
     st.header("Alberta Whitebook :chart_with_upwards_trend:")
-    st.text("real-time used vehicle markets")
+    st.caption(":red[real-time used vehicle markets]")
 
     #FILTERS
     st.text("Filters")
@@ -111,87 +123,81 @@ with st.sidebar:
 
 #EXPLORE TAB
 with tabs[0]:
-    binperiod = 1 #days
-    pricebytime = (
-        data[['Price', 'Date_Posted']]
-        .groupby('Date_Posted')
-        .mean()
-        .asfreq(
-            f'{binperiod}D',
-            method='ffill'
-        )
+    time_series = np.arange(
+        start = data['Date_Posted_S'].min(),
+        stop = data['Date_Posted_S'].max(),
+        step = 3600 * 4 #interval of 4 hours
     )
+    avg_price = lowess(
+        endog = data['Price'],
+        exog = data['Date_Posted_S'],
+        frac = 0.2,
+        it = 0,
+        xvals = time_series,
+        is_sorted = False,
+        missing = 'drop',
+        return_sorted = False
+    )
+    price_time_series = pd.Series(avg_price, index = pd.to_datetime(time_series, unit='s'))
     st.plotly_chart(
-        px.scatter(
-            data_frame = data[['Date_Posted','Price']],
-            x = 'Date_Posted',
-            y = 'Price',
-            title = 'Market View',
+        px.line(
+            price_time_series,
+            title = 'Market Overview (Average Price vs Time)',
             labels = {
                 'value':'Price',
-                'Date_Posted':'Date'
+                'index':'Time'
             },
-            trendline = 'lowess',
-            trendline_options = {
-                'frac':0.2
-            }
+            color_discrete_sequence = ['#ff6969']
         )
         .update_layout(
-            showlegend=False
-        )
-        .update_traces(
-            line={
-                'color':'#1f77b4'
-            },
-            marker_size=3,
-            marker_color='lightgrey'
+            showlegend = False,
+            xaxis_fixedrange = True,
+            yaxis_fixedrange = True
         ),
-        use_container_width=True
+        use_container_width = True
     )
     
     mapdata = (
-     data[['Latitude', 'Longitude']]
-     .rename(columns={'Latitude':'lat', 'Longitude':'lon'})
-     .query("lat > 48 and lat < 61 and lon > -121 and lon < -109")
+        data[['Latitude', 'Longitude']]
+        .rename(columns={'Latitude':'lat', 'Longitude':'lon'})
+        .query("lat > 48 and lat < 61 and lon > -121 and lon < -109")
     )
     st.map(mapdata)
-
-
-    st.plotly_chart(
-        px.treemap(
-            data,
-            path=[
-                'Body_Type',
-                'Make',
-                'Model'
-            ],
-            values='Price'
-        )
-        .update_traces(marker={'cornerradius':5}),
-        use_container_width=True
-    )
 
 #APPRAISE TAB
 with tabs[1]:
     st.caption('Use filters in the sidebar to get info specific to your vehicle.')
-    
+
+    km_index = np.arange(
+        start = data['Kilometers'].min(),
+        stop = data['Kilometers'].max(),
+        step = 5000
+    )
+    avg_price_by_km = lowess(
+        endog = data['Price'],
+        exog = data['Kilometers'],
+        frac = 0.2,
+        it = 0,
+        xvals = km_index,
+        is_sorted = False,
+        missing = 'drop',
+        return_sorted = False
+    )
+    price_km_series = pd.Series(avg_price_by_km, index = km_index)
     st.plotly_chart(
-        px.scatter(
-            data[['Kilometers','Price']],
-            x='Kilometers',
-            y='Price',
-            title='Average Price by Mileage',
-            trendline = 'lowess',
-            trendline_options = {
-                'frac':0.2
-            }
-        )
-        .update_traces(
-            line={
-                'color':'#1f77b4'
+        px.line(
+            price_km_series,
+            title = 'Average Price By Mileage',
+            labels = {
+                'value':'Price',
+                'index':'Kilometers'
             },
-            marker_size=3,
-            marker_color='lightgrey'
+            color_discrete_sequence = ['#ff6969']
+        )
+        .update_layout(
+            showlegend = False,
+            xaxis_fixedrange = True,
+            yaxis_fixedrange = True
         ),
         use_container_width = True
     )
