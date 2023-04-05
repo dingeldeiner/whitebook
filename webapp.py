@@ -150,10 +150,12 @@ with tabs[0]:
             color_discrete_sequence = ['#ff6969']
         )
         .update_layout(
-            showlegend = False,
-            xaxis_fixedrange = True,
-            yaxis_fixedrange = True
+            showlegend = False
         ),
+        config = {
+            'staticPlot':True
+        }
+        ,
         use_container_width = True
     )
     
@@ -199,5 +201,8 @@ with tabs[1]:
             xaxis_fixedrange = True,
             yaxis_fixedrange = True
         ),
+        config = {
+            'staticPlot':True
+        },
         use_container_width = True
     )
